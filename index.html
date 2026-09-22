@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MANTIS Copilot</title>
+<style>
+:root{
+  --bg:#07110d;--panel:#0d1b15;--line:#1d3a2d;--text:#ecf7f0;
+  --muted:#8ca397;--accent:#6ee7a5;--accent2:#2cc977;
+  --bubble:#13291f;--user:#174f35
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at top,#10251b 0,#07110d 52%);
+color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+min-height:100dvh}
+button,input{font:inherit}
+.app{min-height:100dvh;display:flex;flex-direction:column;max-width:980px;margin:auto;
+background:rgba(7,17,13,.88);border-left:1px solid #10261c;border-right:1px solid #10261c}
+.top{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);
+background:rgba(13,27,21,.93);backdrop-filter:blur(12px);position:sticky;top:0;z-index:3}
+.logo{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;
+background:linear-gradient(145deg,#163f2b,#0d2519);border:1px solid #2e6448;font-weight:900;color:var(--accent)}
+.title{font-weight:800}.sub{font-size:12px;color:var(--muted);margin-top:3px}.spacer{flex:1}
+.badge{font-size:12px;color:#bff5d6;border:1px solid #28573f;background:#0b2117;padding:6px 9px;border-radius:999px}
+.logout{display:none;border:1px solid #315442;color:#bdd4c8;background:transparent;border-radius:10px;padding:7px 10px;cursor:pointer}
+.chat{flex:1;overflow:auto;padding:22px 18px 120px;scroll-behavior:smooth}
+.welcome{max-width:620px;margin:26px auto 18px;text-align:center}
+.welcome h1{margin:0 0 8px;font-size:clamp(27px,5vw,42px)}
+.welcome p{margin:0;color:var(--muted);line-height:1.55}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
+.chip{border:1px solid #264b39;background:#0e2018;color:#cfe7da;padding:9px 12px;border-radius:999px;cursor:pointer}
+.msgs{max-width:800px;margin:auto}.row{display:flex;margin:15px 0}.row.user{justify-content:flex-end}
+.bubble{max-width:min(82%,700px);padding:13px 15px;border:1px solid var(--line);background:var(--bubble);
+border-radius:18px 18px 18px 5px;white-space:pre-wrap;line-height:1.48;font-size:14px;
+box-shadow:0 8px 30px rgba(0,0,0,.12)}
+.user .bubble{background:var(--user);border-color:#286a49;border-radius:18px 18px 5px 18px}
+.meta{font-size:11px;color:var(--muted);margin:5px 4px 0}
+.composer-wrap{position:fixed;bottom:0;left:0;right:0;padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+background:linear-gradient(180deg,rgba(7,17,13,0),#07110d 30%);z-index:4}
+.composer{max-width:900px;margin:auto;display:flex;gap:8px;background:#0e1f18;border:1px solid #244735;
+padding:8px;border-radius:18px;box-shadow:0 20px 40px rgba(0,0,0,.35)}
+.composer input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--text);padding:10px 11px}
+.send{width:44px;height:44px;border:0;border-radius:13px;background:var(--accent2);color:#052014;font-weight:900;cursor:pointer}
+.send:disabled{opacity:.45}
+.overlay{position:fixed;inset:0;background:rgba(3,10,7,.84);display:grid;place-items:center;z-index:10;padding:18px;backdrop-filter:blur(8px)}
+.card{width:min(430px,100%);background:#0d1b15;border:1px solid #244735;border-radius:24px;padding:24px;
+box-shadow:0 30px 90px rgba(0,0,0,.5)}
+.card h2{margin:0 0 6px}.card p{color:var(--muted);margin:0 0 18px}
+.field{display:block;margin:11px 0}.field span{display:block;font-size:12px;color:#a9bdb2;margin:0 0 6px}
+.field input{width:100%;border:1px solid #2a4c3a;background:#08140f;color:var(--text);border-radius:12px;padding:12px;outline:none}
+.login{width:100%;border:0;background:var(--accent2);padding:12px;border-radius:12px;font-weight:800;color:#062116;cursor:pointer;margin-top:7px}
+.err{min-height:20px;margin-top:10px;color:#ff9292;font-size:13px}.tiny{font-size:11px;color:#6f877b;margin-top:13px;text-align:center}.typing{opacity:.72}
+@media(max-width:640px){.top{padding:11px 12px}.logo{width:40px;height:40px}.badge{display:none}.chat{padding:14px 11px 112px}.bubble{max-width:90%}.welcome{margin-top:18px}.composer-wrap{padding-left:8px;padding-right:8px}.logout{font-size:12px;padding:7px 8px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div class="logo">M</div>
+  <div><div class="title">MANTIS Copilot</div><div class="sub">Programador de Manutenção • modo consulta</div></div>
+  <div class="spacer"></div><div class="badge">● Online</div><button class="logout" id="logout">Sair</button>
+</header>
+<main class="chat" id="chat">
+<section class="welcome" id="welcome">
+  <h1>Como posso ajudar na manutenção?</h1>
+  <p>Consulte preventivas, equipamentos e históricos usando linguagem natural.</p>
+  <div class="chips">
+    <button class="chip">Preventivas pendentes da L5</button>
+    <button class="chip">Histórico do CKR-203</button>
+    <button class="chip">Localize o redutor da L2</button>
+  </div>
+</section>
+<div class="msgs" id="msgs"></div>
+</main>
+<div class="composer-wrap"><form class="composer" id="form">
+<input id="input" autocomplete="off" placeholder="Pergunte algo sobre a manutenção..." disabled>
+<button class="send" id="send" disabled>➜</button>
+</form></div>
+</div>
+
+<div class="overlay" id="overlay">
+<div class="card">
+  <h2>Entrar no MANTIS</h2>
+  <p>Use o mesmo usuário/e-mail e senha cadastrados no sistema.</p>
+  <label class="field"><span>Usuário ou e-mail</span><input id="user" autocomplete="username"></label>
+  <label class="field"><span>Senha</span><input id="pass" type="password" autocomplete="current-password"></label>
+  <button class="login" id="login">Entrar</button>
+  <div class="err" id="err"></div>
+  <div class="tiny">O chat usa somente consultas nesta fase.</div>
+</div>
+</div>
+
+<script>
+const PROJECT="https://whewhiistioechrgvahu.supabase.co";
+const LOGIN=PROJECT+"/functions/v1/login-username";
+const COPILOT=PROJECT+"/functions/v1/mantis-copilot";
+let token=sessionStorage.getItem("mantis_access_token")||"";
+const $=id=>document.getElementById(id);
+
+function setLogged(ok){
+  $("overlay").style.display=ok?"none":"grid";
+  $("input").disabled=!ok;
+  $("send").disabled=!ok;
+  $("logout").style.display=ok?"block":"none";
+  if(ok)$("input").focus();
+}
+setLogged(!!token);
+
+$("login").onclick=async()=>{
+  const identifier=$("user").value.trim(),password=$("pass").value;
+  $("err").textContent="";
+  $("login").disabled=true;$("login").textContent="Entrando...";
+  try{
+    const r=await fetch(LOGIN,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({identifier,password})
+    });
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||"Falha no login");
+    token=d.access_token;
+    sessionStorage.setItem("mantis_access_token",token);
+    setLogged(true);
+  }catch(e){
+    $("err").textContent=e.message||"Não foi possível entrar.";
+  }finally{
+    $("login").disabled=false;$("login").textContent="Entrar";
+  }
+};
+
+$("logout").onclick=()=>{
+  token="";
+  sessionStorage.removeItem("mantis_access_token");
+  setLogged(false);
+};
+
+function add(role,text,extra=""){
+  $("welcome").style.display="none";
+  const row=document.createElement("div");
+  row.className="row "+role;
+  row.innerHTML='<div><div class="bubble '+extra+'"></div><div class="meta">'+(role==="user"?"Você":"MANTIS Copilot")+'</div></div>';
+  row.querySelector(".bubble").textContent=text;
+  $("msgs").appendChild(row);
+  $("chat").scrollTop=$("chat").scrollHeight;
+  return row;
+}
+
+async function ask(message){
+  if(!token)return;
+  add("user",message);$("input").value="";$("send").disabled=true;
+  const typing=add("assistant","Consultando MANTIS...","typing");
+  try{
+    const r=await fetch(COPILOT,{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+      body:JSON.stringify({message})
+    });
+    const d=await r.json();
+    if(r.status===401){
+      sessionStorage.removeItem("mantis_access_token");token="";setLogged(false);
+      throw new Error("Sua sessão expirou. Entre novamente.");
+    }
+    if(!r.ok)throw new Error(d.error||"Erro na consulta");
+    typing.querySelector(".bubble").textContent=d.answer||"Consulta concluída sem resposta.";
+    typing.querySelector(".bubble").classList.remove("typing");
+  }catch(e){
+    typing.querySelector(".bubble").textContent="⚠️ "+(e.message||"Não foi possível consultar o MANTIS.");
+    typing.querySelector(".bubble").classList.remove("typing");
+  }finally{
+    $("send").disabled=false;$("input").focus();
+    $("chat").scrollTop=$("chat").scrollHeight;
+  }
+}
+
+$("form").onsubmit=e=>{e.preventDefault();const m=$("input").value.trim();if(m)ask(m)};
+document.querySelectorAll(".chip").forEach(b=>b.onclick=()=>ask(b.textContent));
+</script>
+</body>
+</html>
